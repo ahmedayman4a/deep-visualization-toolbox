@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 import os
 import time
@@ -26,7 +26,7 @@ class WithTimer:
     def __exit__(self, *args):
         if not self.quiet:
             titlestr = (' ' + self.title) if self.title else ''
-            print 'Elapsed%s: wall: %.06f, sys: %.06f' % ((titlestr,) + self.elapsed())
+            print('Elapsed%s: wall: %.06f, sys: %.06f' % ((titlestr,) + self.elapsed()))
 
 
 
@@ -46,7 +46,7 @@ def combine_dicts(dicts_tuple):
     '''Combines multiple dictionaries into one by adding a prefix to keys'''
     ret = {}
     for prefix,dictionary in dicts_tuple:
-        for key in dictionary.keys():
+        for key in list(dictionary.keys()):
             ret['%s%s' % (prefix, key)] = dictionary[key]
     return ret
 
@@ -57,6 +57,6 @@ def tsplit(string, no_empty_strings, *delimiters):
     pattern = '|'.join(map(re.escape, delimiters))
     strings = re.split(pattern, string)
     if no_empty_strings:
-        strings = filter(None, strings)
+        strings = [_f for _f in strings if _f]
 
     return strings

@@ -1,9 +1,9 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 import os
 import errno
 import pickle
-import StringIO
+import io
 from pylab import *
 from scipy.ndimage.filters import gaussian_filter
 
@@ -43,7 +43,7 @@ class FindParams(object):
 
         self.__dict__.update(default_params)
 
-        for key,val in kwargs.iteritems():
+        for key,val in kwargs.items():
             assert key in self.__dict__, 'Unknown param: %s' % key
             self.__dict__[key] = val
 
@@ -69,10 +69,10 @@ class FindParams(object):
         self.push_unit = (self.push_channel,) + self.push_spatial
 
     def __str__(self):
-        ret = StringIO.StringIO()
-        print >>ret, 'FindParams:'
+        ret = io.StringIO()
+        print('FindParams:', file=ret)
         for key in sorted(self.__dict__.keys()):
-            print >>ret, '%30s: %s' % (key, self.__dict__[key])
+            print('%30s: %s' % (key, self.__dict__[key]), file=ret)
         return ret.getvalue()
 
 
@@ -89,7 +89,7 @@ class FindResults(object):
         self.x0 = None
         self.majority_obj = None
         self.majority_xx = None
-        self.best_obj = None
+        self.best_obj = 0
         self.best_xx = None
         self.last_obj = None
         self.last_xx = None
@@ -130,14 +130,14 @@ class FindResults(object):
         containing first couple values; useful for saving results as a
         reasonably sized pickle file.
         '''
-        for key,val in self.__dict__.iteritems():
+        for key,val in self.__dict__.items():
             if isinstance(val, ndarray):
                 valstr = '%s array [%s, %s, ...]' % (val.shape, val.flatten()[0], val.flatten()[1])
                 self.__dict__[key] = 'Trimmed %s' % valstr
 
     def __str__(self):
-        ret = StringIO.StringIO()
-        print >>ret, 'FindResults:'
+        ret = io.StringIO()
+        print('FindResults:', file=ret)
         for key in sorted(self.__dict__.keys()):
             val = self.__dict__[key]
             if isinstance(val, list) and len(val) > 4:
@@ -146,7 +146,7 @@ class FindResults(object):
                 valstr = '%s array [%s, %s, ...]' % (val.shape, val.flatten()[0], val.flatten()[1])
             else:
                 valstr = '%s' % val
-            print >>ret, '%30s: %s' % (key, valstr)
+            print('%30s: %s' % (key, valstr), file=ret)
         return ret.getvalue()
 
 
@@ -170,14 +170,14 @@ class GradientOptimizer(object):
     def run_optimize(self, params, prefix_template = None, brave = False, skipbig = False):
         '''All images are in Caffe format, e.g. shape (3, 227, 227) in BGR order.'''
 
-        print '\n\nStarting optimization with the following parameters:'
-        print params
+        print('\n\nStarting optimization with the following parameters:')
+        print(params)
         
         x0 = self._get_x0(params)
         xx, results = self._optimize(params, x0)
         self.save_results(params, results, prefix_template, brave = brave, skipbig = skipbig)
 
-        print results.meta_result
+        print(results.meta_result)
         
         return xx
 
@@ -213,12 +213,12 @@ class GradientOptimizer(object):
 
         if is_conv:
             if params.push_spatial == (0,0):
-                recommended_spatial = (data_shape[2]/2, data_shape[3]/2)
-                print ('WARNING: A unit on a conv layer (%s) is being optimized, but push_spatial\n'
+                recommended_spatial = (data_shape[2]//2, data_shape[3]//2)
+                print(('WARNING: A unit on a conv layer (%s) is being optimized, but push_spatial\n'
                        'is %s, so the upper-left unit in the channel is selected. To avoid edge\n'
                        'effects, you might want to optimize a non-edge unit instead, e.g. the center\n'
                        'unit by using `--push_spatial "%s"`\n'
-                       % (params.push_layer, params.push_spatial, recommended_spatial))
+                       % (params.push_layer, params.push_spatial, recommended_spatial)))
         else:
             assert params.push_spatial == (0,0), 'For FC layers, spatial indices must be (0,0)'
         
@@ -255,18 +255,18 @@ class GradientOptimizer(object):
             # 3. Print progress
             if ii > 0:
                 if params.lr_policy == 'progress':
-                    print '%-4d  progress predicted: %g, actual: %g' % (ii, pred_prog, obj - old_obj)
+                    print('%-4d  progress predicted: %g, actual: %g' % (ii, pred_prog, obj - old_obj))
                 else:
-                    print '%-4d  progress: %g' % (ii, obj - old_obj)
+                    print('%-4d  progress: %g' % (ii, obj - old_obj))
             else:
-                print '%d' % ii
+                print('%d' % ii)
             old_obj = obj
 
             push_label_str = ('(%s)' % push_label) if is_labeled_unit else ''
             max_label_str  = ('(%s)' % self.labels[idxmax[0]]) if is_labeled_unit else ''
-            print '     push unit: %16s with value %g %s' % (params.push_unit, acts[params.push_unit], push_label_str)
-            print '       Max idx: %16s with value %g %s' % (idxmax, valmax, max_label_str)
-            print '             X:', xx.min(), xx.max(), norm(xx)
+            print('     push unit: %16s with value %g %s' % (params.push_unit, acts[params.push_unit], push_label_str))
+            print('       Max idx: %16s with value %g %s' % (idxmax, valmax, max_label_str))
+            print('             X:', xx.min(), xx.max(), norm(xx))
 
 
             # 4. Do backward pass to get gradient
@@ -278,9 +278,9 @@ class GradientOptimizer(object):
             backout = self.net.backward_from_layer(params.push_layer, diffs if is_conv else diffs[:,:,0,0])
 
             grad = backout['data'].copy()
-            print '          grad:', grad.min(), grad.max(), norm(grad)
+            print('          grad:', grad.min(), grad.max(), norm(grad))
             if norm(grad) == 0:
-                print 'Grad exactly 0, failed'
+                print('Grad exactly 0, failed')
                 results.meta_result = 'Metaresult: grad 0 failure'
                 break
 
@@ -292,13 +292,13 @@ class GradientOptimizer(object):
                 desired_prog = min(params.lr_params['early_prog'], late_prog)
                 prog_lr = desired_prog / norm(grad)**2
                 lr = min(params.lr_params['max_lr'], prog_lr)
-                print '    desired progress:', desired_prog, 'prog_lr:', prog_lr, 'lr:', lr
+                print('    desired progress:', desired_prog, 'prog_lr:', prog_lr, 'lr:', lr)
                 pred_prog = lr * dot(grad.flatten(), grad.flatten())
             elif params.lr_policy == 'progress':
                 # straight progress-based lr
                 prog_lr = params.lr_params['desired_prog'] / norm(grad)**2
                 lr = min(params.lr_params['max_lr'], prog_lr)
-                print '    desired progress:', params.lr_params['desired_prog'], 'prog_lr:', prog_lr, 'lr:', lr
+                print('    desired progress:', params.lr_params['desired_prog'], 'prog_lr:', prog_lr, 'lr:', lr)
                 pred_prog = lr * dot(grad.flatten(), grad.flatten())
             elif params.lr_policy == 'constant':
                 # constant fixed learning rate
@@ -315,7 +315,7 @@ class GradientOptimizer(object):
 
                 if params.blur_every is not 0 and params.blur_radius > 0:
                     if params.blur_radius < .3:
-                        print 'Warning: blur-radius of .3 or less works very poorly'
+                        print('Warning: blur-radius of .3 or less works very poorly')
                         #raise Exception('blur-radius of .3 or less works very poorly')
                     if ii % params.blur_every == 0:
                         for channel in range(3):
@@ -386,12 +386,12 @@ class GradientOptimizer(object):
             saveimagesc('%sbest_Xpm.jpg' % prefix, asimg + self._data_mean_rgb_img)  # PlusMean
 
         with open('%sinfo.txt' % prefix, 'w') as ff:
-            print >>ff, params
-            print >>ff
-            print >>ff, results
+            print(params, file=ff)
+            print(file=ff)
+            print(results, file=ff)
         if not skipbig:
-            with open('%sinfo_big.pkl' % prefix, 'w') as ff:
+            with open('%sinfo_big.pkl' % prefix, 'wb') as ff:
                 pickle.dump((params, results), ff, protocol=-1)
         results.trim_arrays()
-        with open('%sinfo.pkl' % prefix, 'w') as ff:
+        with open('%sinfo.pkl' % prefix, 'wb') as ff:
             pickle.dump((params, results), ff, protocol=-1)

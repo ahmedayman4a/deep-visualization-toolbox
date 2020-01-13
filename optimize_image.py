@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 import os
 import sys
@@ -147,22 +147,22 @@ def main():
     # Load mean
     data_mean = eval(args.mean)
 
-    if isinstance(data_mean, basestring):
+    if isinstance(data_mean, str):
         # If the mean is given as a filename, load the file
         try:
             data_mean = np.load(data_mean)
         except IOError:
-            print '\n\nCound not load mean file:', data_mean
-            print 'To fetch a default model and mean file, use:\n'
-            print '  $ cd models/caffenet-yos/'
-            print '  $ cp ./fetch.sh\n\n'
-            print 'Or to use your own mean, change caffevis_data_mean in settings_local.py or override by running with `--mean MEAN_FILE` (see --help).\n'
+            print('\n\nCound not load mean file:', data_mean)
+            print('To fetch a default model and mean file, use:\n')
+            print('  $ cd models/caffenet-yos/')
+            print('  $ cp ./fetch.sh\n\n')
+            print('Or to use your own mean, change caffevis_data_mean in settings_local.py or override by running with `--mean MEAN_FILE` (see --help).\n')
             raise
         # Crop center region (e.g. 227x227) if mean is larger (e.g. 256x256)
         excess_h = data_mean.shape[1] - data_size[0]
         excess_w = data_mean.shape[2] - data_size[1]
         assert excess_h >= 0 and excess_w >= 0, 'mean should be at least as large as %s' % repr(data_size)
-        data_mean = data_mean[:, (excess_h/2):(excess_h/2+data_size[0]), (excess_w/2):(excess_w/2+data_size[1])]
+        data_mean = data_mean[:, (excess_h//2):(excess_h//2+data_size[0]), (excess_w//2):(excess_w//2+data_size[1])]
     elif data_mean is None:
         pass
     else:
@@ -172,7 +172,7 @@ def main():
         while len(data_mean.shape) < 3:
             data_mean = np.expand_dims(data_mean, -1)
 
-    print 'Using mean:', repr(data_mean)
+    print('Using mean:', repr(data_mean))
             
     # Load network
     sys.path.insert(0, os.path.join(args.caffe_root, 'python'))
