@@ -12,14 +12,14 @@ class WithTimer:
         self.quiet = quiet
         
     def elapsed(self):
-        return time.time() - self.wall, time.clock() - self.proc
+        return time.time() - self.wall, time.time() - self.proc
 
     def enter(self):
         '''Manually trigger enter'''
         self.__enter__()
     
     def __enter__(self):
-        self.proc = time.clock()
+        self.proc = time.time()
         self.wall = time.time()
         return self
         
