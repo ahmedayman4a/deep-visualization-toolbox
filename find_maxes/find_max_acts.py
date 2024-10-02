@@ -2,7 +2,7 @@
 
 import argparse
 import ipdb as pdb
-import cPickle as pickle
+import pickle as pickle
 
 from loaders import load_imagenet_mean, load_labels, caffe
 from jby_misc import WithTimer
